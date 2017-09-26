@@ -22,6 +22,7 @@ class Carousel extends Component {
         showIndicators: PropTypes.bool,
         infiniteLoop: PropTypes.bool,
         showThumbs: PropTypes.bool,
+        thumbWidth: PropTypes.number,
         selectedItem: PropTypes.number,
         onClickItem: PropTypes.func.isRequired,
         onClickThumb: PropTypes.func.isRequired,
@@ -68,7 +69,8 @@ class Carousel extends Component {
         this.state = {
             initialized: false,
             selectedItem: props.selectedItem,
-            hasMount: false
+            hasMount: false,
+            isMouseEntered: false
         };
     }
 
@@ -138,7 +140,7 @@ class Carousel extends Component {
 
         if (this.props.stopOnHover && carouselWrapper) {
             carouselWrapper.addEventListener('mouseenter', this.stopOnHover);
-            carouselWrapper.addEventListener('mouseleave', this.autoPlay);
+            carouselWrapper.addEventListener('mouseleave', this.startOnLeave);
         }
     }
 
@@ -148,7 +150,7 @@ class Carousel extends Component {
 
         if (this.props.stopOnHover && carouselWrapper) {
             carouselWrapper.removeEventListener('mouseenter', this.stopOnHover);
-            carouselWrapper.removeEventListener('mouseleave', this.autoPlay);
+            carouselWrapper.removeEventListener('mouseleave', this.startOnLeave);
         }
     }
 
@@ -184,6 +186,7 @@ class Carousel extends Component {
             return;
         }
 
+        clearTimeout(this.timer);
         this.timer = setTimeout(() => {
             this.increment();
         }, this.props.interval);
@@ -203,7 +206,13 @@ class Carousel extends Component {
     }
 
     stopOnHover = () => {
+        this.setState({isMouseEntered: true});
         this.clearAutoPlay();
+    }
+
+    startOnLeave = () => {
+        this.setState({isMouseEntered: false});
+        this.autoPlay();
     }
 
     navigateWithKeyboard = (e) => {
@@ -365,7 +374,9 @@ class Carousel extends Component {
             selectedItem: position
         });
 
-        if (this.props.autoPlay) {
+        // don't reset auto play when stop on hover is enabled, doing so will trigger a call to auto play more than once
+        // and will result in the interval function not being cleared correctly.
+        if (this.props.autoPlay && this.state.isMouseEntered === false) {
             this.resetAutoPlay();
         }
     }
@@ -455,7 +466,7 @@ class Carousel extends Component {
         }
 
         return (
-            <Thumbs onSelectItem={this.handleClickThumb} selectedItem={this.state.selectedItem} transitionTime={this.props.transitionTime}>
+            <Thumbs onSelectItem={this.handleClickThumb} selectedItem={this.state.selectedItem} transitionTime={this.props.transitionTime} thumbWidth={this.props.thumbWidth}>
                 {this.props.children}
             </Thumbs>
         );
